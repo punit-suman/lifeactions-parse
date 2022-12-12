@@ -2,6 +2,7 @@ const express = require('express')
 const fs = require('fs');
 const readline = require('readline');
 const path = require('path');
+const cors = require("cors");
 const logger = require("morgan");
 const stringify = require('csv-stringify-as-promised');
 
