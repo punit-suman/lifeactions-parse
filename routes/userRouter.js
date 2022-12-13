@@ -7,18 +7,19 @@ userRouter.post('/create', async(req, res) => {
     var data = {error: false}
     try {
         var sqlConn = await sql.connect(config)
+        console.log(req.body)
         if (sqlConn) {
             var request = new sql.Request()
                 .input('about', sql.VarChar, req.body.about)
                 .input('education', sql.VarChar, req.body.education)
                 .input('occupation', sql.VarChar, req.body.occupation)
                 .input('durables_used', sql.VarChar, req.body.durables_used)
-            var query = `insert into Users(about, education, occupation, durables_used) OUTPUT inserted.user_id values (@about, @education, @occupation, @durables_used)`
+            var query = `insert into users(about, education, occupation, durables_used) OUTPUT inserted.user_id values (@about, @education, @occupation, @durables_used)`
             var response = await request.query(query)
-            var id = response.recordset[0].user_id
-            var hash = (id*9*12*2022);
+            // var id = response.recordset[0].user_id
+            // var hash = (id*9*12*2022);
             if (response && response.rowsAffected == 1) {
-                data['data'] = hash
+                data['user_id'] = response.recordset[0].user_id
                 data['message'] = "User registered successfully"
             } else {
                 data['message'] = "User could not be registered"
@@ -43,7 +44,7 @@ userRouter.get('/getusers', async(req, res) => {
         var sqlConn = await sql.connect(config)
         if (sqlConn) {
             var request = new sql.Request();
-            var query = `Select * from Users`
+            var query = `Select * from users`
             var response = await request.query(query)
             if (response && response.recordset) {
                 data['data'] = response.recordset
