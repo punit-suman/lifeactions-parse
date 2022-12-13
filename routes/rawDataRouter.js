@@ -47,7 +47,10 @@ rawDataRouter.get('/getData', async(req, res) => {
         var sqlConn = await sql.connect(config)
         if (sqlConn) {
             var request = new sql.Request()
-            var query = `select * from data_transaction`
+            const today = new Date()
+            var tdyDaySuffix = `${today.getDate()}_${today.getMonth()+1}_${today.getFullYear()}`
+            let tableName = `data_transaction_${tdyDaySuffix}`
+            var query = `select * from ${tableName}`
             var response = await request.query(query)
             if (response && response.recordset) {
                 data['data'] = response.recordset
