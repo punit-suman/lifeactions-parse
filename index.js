@@ -24,7 +24,7 @@ app.get('/', async(req, res) => {
 })
 
 // local time
-cron.schedule("1 0 * * *", async() => {
+cron.schedule("1 * * * *", async() => {
   var res = await checkAndCreateTdyDataTranscTbl()
   if (res.error) {
     console.log("Error in creating today table")
