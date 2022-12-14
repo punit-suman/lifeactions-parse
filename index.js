@@ -15,13 +15,13 @@ app.use(cors())
 app.use(express.json())
 app.use(logger("dev"));
 
-const { amazonRouter } = require("./routes/amazon");
+// const { amazonRouter } = require("./routes/amazon");
 const { userRouter } = require("./routes/userRouter");
 const { rawDataRouter } = require("./routes/rawDataRouter");
 
-const resultData=[]
+// const resultData=[]
 
-app.use("/amazon", amazonRouter);
+// app.use("/amazon", amazonRouter);
 app.use("/rawData", rawDataRouter);
 app.use("/user", userRouter);
 
