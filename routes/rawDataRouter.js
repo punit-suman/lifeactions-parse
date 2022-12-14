@@ -75,6 +75,30 @@ rawDataRouter.get('/getData', async(req, res) => {
 })
 
 rawDataRouter.get('/getcsv/:date', async(req, res) => {
+    try {
+        var date = req.params.date
+        var daySuffix
+        if (!date) {
+            const today = new Date()
+            daySuffix = `${today.getDate()}_${today.getMonth()+1}_${today.getFullYear()}`
+        } else {
+            daySuffix = date
+        }
+        let tableName = `data_transaction_${daySuffix}`
+        const dirName = path.join(__dirname, 'temp-files')
+        const filePath = path.join(dirName, tableName + '.csv')
+        res.download(filePath, () => {
+            fs.unlink(filePath, (err) => {
+                if (err) res.send(err.message);
+            });
+        });
+    } catch (err) {
+        console.log(err)
+        res.send(err.message)
+    }
+})
+
+rawDataRouter.get('/createcsv/:date', async(req, res) => {
     var data = {error: false}
     try {
         var sqlConn = await sql.connect(config)
@@ -104,14 +128,8 @@ rawDataRouter.get('/getcsv/:date', async(req, res) => {
                 }
                 const filePath = path.join(dirName, tableName + '.csv')
                 fs.writeFileSync(filePath, '\ufeff' + raw, { encoding: 'utf16le' }, {flag: 'w'});
-                res.download(filePath, () => {
-                    fs.unlink(filePath, (err) => {
-                        if (err) throw err;
-                    });
-                });
-                return
-                // data['data'] = response.recordset
-                // data['message'] = "Data sent successfully"
+                data['data'] = response.recordset
+                data['message'] = "Data sent successfully"
             } else {
                 data['message'] = "Data could not sent"
             }
