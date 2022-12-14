@@ -33,11 +33,15 @@ app.get('/', async(req, res) => {
 cron.schedule("1 0 * * *", async() => {
   var res = await checkAndCreateTdyDataTranscTbl()
   if (res.error) {
-    res.send("Error in creating today table")
+    console.log("Error in creating today table")
+  } else {
+    console.log("Table created")
   }
   res = await checkAndCreateNxtDayDataTranscTbl()
   if (res.error) {
-    res.send("Error in creating next day table")
+    console.log("Error in creating next day table")
+  } else {
+    console.log("Table created")
   }
 });
 
