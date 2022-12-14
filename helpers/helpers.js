@@ -110,5 +110,5 @@ module.exports = {
     checkTable,
     createNewDataTranscTbl,
     checkAndCreateTdyDataTranscTbl,
-    checkAndCreateTdyDataTranscTbl
+    checkAndCreateNxtDayDataTranscTbl
 }
