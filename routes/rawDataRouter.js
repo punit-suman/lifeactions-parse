@@ -98,8 +98,8 @@ rawDataRouter.get('/getcsv/:date', async(req, res) => {
     }
 })
 
-rawDataRouter.get('/createcsv/:date', async(req, res) => {
-    var data = {error: false}
+rawDataRouter.get('/createcsv/:date', async (req, res) => {
+    var data = { error: false }
     try {
         var sqlConn = await sql.connect(config)
         if (sqlConn) {
@@ -108,7 +108,7 @@ rawDataRouter.get('/createcsv/:date', async(req, res) => {
             var daySuffix
             if (!date) {
                 const today = new Date()
-                daySuffix = `${today.getDate()}_${today.getMonth()+1}_${today.getFullYear()}`
+                daySuffix = `${today.getDate()}_${today.getMonth() + 1}_${today.getFullYear()}`
             } else {
                 daySuffix = date
             }
@@ -123,11 +123,11 @@ rawDataRouter.get('/createcsv/:date', async(req, res) => {
                 })
                 const raw = await stringify(csvData, { header: true, columns: columns, delimiter: '\t' });
                 const dirName = path.join(__dirname, 'temp-files')
-                if (!fs.existsSync(dirName)){
+                if (!fs.existsSync(dirName)) {
                     fs.mkdirSync(dirName);
                 }
                 const filePath = path.join(dirName, tableName + '.csv')
-                fs.writeFileSync(filePath, '\ufeff' + raw, { encoding: 'utf16le' }, {flag: 'w'});
+                fs.writeFileSync(filePath, '\ufeff' + raw, { encoding: 'utf16le' }, { flag: 'w' });
                 data['data'] = response.recordset
                 data['message'] = "Data sent successfully"
             } else {
@@ -144,6 +144,83 @@ rawDataRouter.get('/createcsv/:date', async(req, res) => {
         data['error'] = true
         data['message'] = "Internal Error"
         res.status(500).send(data)
+    }
+})
+
+rawDataRouter.post('/writeFile', async (req, res) => {
+    try {
+        if (req.files) {
+          
+          let sampleFile = req.files.file;
+          let uploadpath = __dirname + '/upload/' + sampleFile.name;
+          console.log("upload path is : ", uploadpath);
+            console.log("file is : ", sampleFile);
+            sampleFile.mv(uploadpath, function (err) {
+              if (err) return res.status(500).send(err);
+              console.log("File saved");  
+            })  
+          
+          
+          var sqlConn = await sql.connect(config)
+          
+            if (sqlConn) {
+                var request = new sql.Request()
+                    .input('fileName', sql.VarChar, sampleFile.name)
+                    .input('data', sql.VarBinary, sampleFile.data)
+                    .input('extension',sql.VarChar,sampleFile.mimetype)
+                var query = `insert into files(fileName,data,extension) values (@fileName, @data,@extension)`
+                
+                var response = await request.query(query)
+                
+                if (response && response.rowsAffected == 1) {
+                  console.log("Data saved successfully");  
+                  res.send("Data saved successfully");
+                } else {
+                  console.log("Data not saved");  
+                  res.send("Data not saved");
+                }
+            } else {
+              console.log("Connection error");  
+              res.send("connection error");
+            }
+        } else {
+            console.log("File not present");
+            res.send("file not found");
+        }
+    } catch (error) {
+        console.log("error in file reading", error);
+        res.send("Error in file sending");
+    }
+})
+
+rawDataRouter.get('/readFile', async (req, res) => {
+    try {
+        let fileData={}
+            var sqlConn = await sql.connect(config)
+          
+            if (sqlConn) {
+                var request = new sql.Request()
+                var query = `select * from files`
+                var response = await request.query(query)
+                if (response && response.recordset) {
+                    console.log("response is : ", response.recordset);
+                    fileData = response.recordset[0];
+
+                    console.log("FileData is : ", fileData);
+                    console.log("Data is : ", (fileData.data).toString());
+
+
+                    res.send("Data found")
+                } else {
+                    res.send("Data could not found");
+                }
+            } else {
+                res.send("conncetion error");
+        }
+        
+    } catch (error) {
+        console.log("error in file reading", error);
+        res.send("Error in file reading");
     }
 })
 
