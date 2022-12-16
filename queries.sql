@@ -11,5 +11,16 @@ Create table data_transaction (
     id int IDENTITY(1,1) PRIMARY KEY,
     data varchar(max),
     user_id int,
+    file_id int,
     created_at DATETIMEOffset default GETDATE()
 )
+
+CREATE TABLE files (
+    id int IDENTITY(1,1) PRIMARY KEY,
+    file_name varchar(max),
+    data varbinary(max),
+    type varchar(255),
+	user_id int ,
+	created_at DATETIMEOffset default GETDATE()
+);
+
