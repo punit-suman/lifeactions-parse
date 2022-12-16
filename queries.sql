@@ -24,3 +24,14 @@ CREATE TABLE files (
 	created_at DATETIMEOffset default GETDATE()
 );
 
+create table apps_m (
+	app_id int IDENTITY(1,1) PRIMARY KEY,
+    app_name varchar(255),
+	description varchar(max),
+	category_id int,
+	packageName varchar(255),
+    created_at DATETIMEOffset default GETDATE(),
+	created_by int default 1,
+	modified_at datetimeoffset,
+	modified_by int
+)
