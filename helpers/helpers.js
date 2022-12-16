@@ -1,5 +1,7 @@
 var sql = require("mssql");
-const config = require('../dbConfig')
+const { TablesName } = require("../constant");
+const config = require('../dbConfig');
+const TableQueries = require("../TableQueries");
 
 const checkTable = async(tableName) => {
     var data = {error: false}
@@ -26,21 +28,32 @@ const checkTable = async(tableName) => {
     }
 }
 
-const createNewDataTranscTbl = async(tableName) => {
+const createNewTable = async (tableName, type) => {
+    console.log("In create new table : ", tableName, "  type is : ", type);
     var data = {error: false}
     try {
         var sqlConn = await sql.connect(config)
         if (sqlConn) {
             var request = new sql.Request()
                 .input('tableName', sql.VarChar, tableName)
-            var query = `Create table ${tableName} (
-                id int IDENTITY(1,1) PRIMARY KEY,
-                data varchar(max),
-                user_id int,
-                created_at DATETIMEOffset default GETDATE()
-            )`
-            var response = await request.query(query)
-            console.log(response)
+            var query;
+            switch (type) {
+                case TablesName.DATA_TRANSACTION:
+                            query = TableQueries.data_transaction(tableName);               
+                             break;
+            
+                case TablesName.FILE:
+                             query = TableQueries.file(tableName);
+                             break;
+                default: query = null;
+                    break;
+            }
+            if (query) {
+                var response = await request.query(query)
+                console.log(response)
+            } else {
+                console.log("Unable to set query for table creation");
+            }
         }
     } catch(error) {
         console.log("error.message -- ", error.message)
@@ -50,65 +63,64 @@ const createNewDataTranscTbl = async(tableName) => {
     
 }
 
-const checkAndCreateTdyDataTranscTbl = async() => {
+const checkAndCreateTdyDataTbl = async(type) => {
     var response = {error: false, tblCreated: false}
     try {
         // create data transaction table for today if not exist
         const today = new Date()
         var tdyDaySuffix = `${today.getDate()}_${today.getMonth()+1}_${today.getFullYear()}`
-        let tableName = `data_transaction_${tdyDaySuffix}`
+        let tableName = `${type}_${tdyDaySuffix}`
         var isTbl = await checkTable(tableName)
         if (!isTbl.error) {
             if (!isTbl.tableFound) {
-                await createNewDataTranscTbl(tableName);
+                await createNewTable(tableName,type);
                 response.tblCreated = true
             } else if (isTbl.tableFound) {
-                console.log('Table with same name found')
-                response['message'] = 'Table with same name found'
+                console.log('Table with same name found of type ', type);
+                response['message'] = `Table with same name found of type ${type}`
             }
         } else {
-            console.log(isTbl.errorMessage)
+            console.log("Error in checkAndCreateTdyDataTbl isTbl : ", isTbl.errorMessage)
             response.error = true
         }
         return response
       } catch(err) {
-        console.log(err.message)
+        console.log("Error in checkAndCreateTdyDataTbl : ", err.message)
         response.error = true
         return response
       }
 }
 
-const checkAndCreateNxtDayDataTranscTbl = async() => {
+const checkAndCreateNxtDayDataTbl = async(type) => {
     var response = {error: false, tblCreated: false}
     try {
         // create data transaction table for next day if not exist
+        const today = new Date()
         const nextDay = new Date(today.setDate(today.getDate() + 1))
         var nxtDaySuffix = `${nextDay.getDate()}_${nextDay.getMonth()+1}_${nextDay.getFullYear()}`
-        tableName = `data_transaction_${nxtDaySuffix}`
+        let tableName = `${type}_${nxtDaySuffix}`
         isTbl = await checkTable(tableName)
         if (!isTbl.error) {
             if (!isTbl.tableFound) {
-                await createNewDataTranscTbl(tableName);
+                await createNewTable(tableName,type);
                 response.tblCreated = true
             } else if (isTbl.tableFound) {
-                console.log('Table with same name found')
-                response['message'] = 'Table with same name found'
+                console.log('Table with same name found of type ', type);
+                response['message'] = `Table with same name found of type ${type}`
             }
         } else {
-            console.log(isTbl.errorMessage)
+            console.log("Error in checkAndCreateNxtDayDataTbl isTbl : ", isTbl.errorMessage)
             response.error = true
         }
         return response
     } catch(err) {
-        console.log(err.message)
+        console.log("Error in checkAndCreateNxtDayDataTbl : ", err.message)
         response.error = true
         return response
     }
 }
-
 module.exports = {
-    checkTable,
-    createNewDataTranscTbl,
-    checkAndCreateTdyDataTranscTbl,
-    checkAndCreateNxtDayDataTranscTbl
+    checkAndCreateTdyDataTbl,
+    checkAndCreateNxtDayDataTbl
+
 }

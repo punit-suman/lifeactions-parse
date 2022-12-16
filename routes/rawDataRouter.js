@@ -4,6 +4,8 @@ const path = require('path');
 const fs = require('fs');
 var sql = require("mssql");
 const config = require('../dbConfig')
+const multer = require('multer');
+const { TablesName } = require('../constant');
 
 rawDataRouter.post('/add', async(req, res) => {
     var data = {error: false}
@@ -147,80 +149,89 @@ rawDataRouter.get('/createcsv/:date', async (req, res) => {
     }
 })
 
-rawDataRouter.post('/writeFile', async (req, res) => {
+rawDataRouter.post('/writeFile', multer().single('file') ,async (req, res) => {
     try {
-        if (req.files) {
+    console.log("request is : ", req.file);
+    console.log("request is files : ", req.filename);
+    console.log("requst body is : ",req);
+    var data = {error: false}
+    const today = new Date()
+    var tdyDaySuffix = `${today.getDate()}_${today.getMonth()+1}_${today.getFullYear()}`
+    let tableName = `${TablesName.FILE}_${tdyDaySuffix}`
+        if (req.file) {
           
-          let sampleFile = req.files.file;
-          let uploadpath = __dirname + '/upload/' + sampleFile.name;
-          console.log("upload path is : ", uploadpath);
-            console.log("file is : ", sampleFile);
-            sampleFile.mv(uploadpath, function (err) {
-              if (err) return res.status(500).send(err);
-              console.log("File saved");  
-            })  
-          
+            let sampleFile = req.file;
+            let userId = req.userId;
           
           var sqlConn = await sql.connect(config)
-          
+
             if (sqlConn) {
                 var request = new sql.Request()
-                    .input('fileName', sql.VarChar, sampleFile.name)
-                    .input('data', sql.VarBinary, sampleFile.data)
-                    .input('extension',sql.VarChar,sampleFile.mimetype)
-                var query = `insert into files(fileName,data,extension) values (@fileName, @data,@extension)`
-                
+                    .input('fileName', sql.VarChar, sampleFile.originalname)
+                    .input('data', sql.VarBinary, sampleFile.buffer)
+                    .input('type', sql.VarChar, sampleFile.mimetype)
+                    .input('userId', sql.Int, userId);
+                var query = `insert into ${tableName}(file_name, data, type, user_id) values (@fileName, @data, @type, @userId)`
                 var response = await request.query(query)
                 
                 if (response && response.rowsAffected == 1) {
                   console.log("Data saved successfully");  
-                  res.send("Data saved successfully");
+                  data['message'] = "Data stored successfully"
                 } else {
                   console.log("Data not saved");  
-                  res.send("Data not saved");
+                  data['message'] = "Data could not be registered"
                 }
             } else {
               console.log("Connection error");  
-              res.send("connection error");
+              data['error'] = true
+            data['message'] = "Database connection error"
             }
         } else {
             console.log("File not present");
-            res.send("file not found");
+            data['error'] = true
+            data['message'] = "Request without File";
         }
+        res.send(data);
     } catch (error) {
-        console.log("error in file reading", error);
-        res.send("Error in file sending");
+        console.log("req.body -- ", req.body)
+        console.log("error.message -- ", error.message)
+        data['error'] = true
+        data['message'] = "Internal Error"
+        res.send(data)
     }
 })
 
 rawDataRouter.get('/readFile', async (req, res) => {
     try {
-        let fileData={}
+        var data = {error: false}
+        let fileData = {}
+        const today = new Date()
+        var tdyDaySuffix = `${today.getDate()}_${today.getMonth()+1}_${today.getFullYear()}`
+        let tableName = `${TablesName.FILE}_${tdyDaySuffix}`
             var sqlConn = await sql.connect(config)
           
             if (sqlConn) {
                 var request = new sql.Request()
-                var query = `select * from files`
+                var query = `select * from ${tableName}`
                 var response = await request.query(query)
                 if (response && response.recordset) {
                     console.log("response is : ", response.recordset);
-                    fileData = response.recordset[0];
-
-                    console.log("FileData is : ", fileData);
-                    console.log("Data is : ", (fileData.data).toString());
-
-
-                    res.send("Data found")
+                    data['data'] = response.recordset
+                    data['message'] = "Data sent successfully"
                 } else {
-                    res.send("Data could not found");
+                    data['message'] = "Data could not sent"
                 }
             } else {
-                res.send("conncetion error");
+                data['error'] = true
+                data['message'] = "Database connection error"
         }
-        
+        res.send(data)
     } catch (error) {
-        console.log("error in file reading", error);
-        res.send("Error in file reading");
+        console.log("req.body -- ", req.body)
+        console.log("error.message -- ", error.message)
+        data['error'] = true
+        data['message'] = "Internal Error"
+        res.status(500).send(data)
     }
 })
 
