@@ -2,10 +2,8 @@ const express = require('express')
 const cors = require("cors");
 const logger = require("morgan");
 const cron = require("node-cron");
-var sql = require('mssql');
-
-
 const {checkAndCreateTdyDataTbl, checkAndCreateNxtDayDataTbl } = require('./helpers/helpers');
+const { parseData } = require('./routes/parseDataRouter')
 
 const app = express()
 const port = 8080
@@ -90,6 +88,14 @@ cron.schedule("30 0 * * *", async() => {
   }
 });
 
+// parse raw data everyday
+cron.schedule("* 3 * * *", async() => {
+  await parseData()
+})
+// app.get('/run', async(req, res) => {
+//   await parseData()
+//   res.send("Done")
+// });
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
