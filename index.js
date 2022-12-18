@@ -3,7 +3,7 @@ const cors = require("cors");
 const logger = require("morgan");
 const cron = require("node-cron");
 const {checkAndCreateTdyDataTbl, checkAndCreateNxtDayDataTbl } = require('./helpers/helpers');
-const { parseData } = require('./routes/parseDataRouter')
+const { parseData, createFinalDataCsv } = require('./routes/parseDataRouter')
 
 const app = express()
 const port = 8080
@@ -13,38 +13,41 @@ app.use(logger("dev"));
 
 const { userRouter } = require("./routes/userRouter");
 const { rawDataRouter } = require("./routes/rawDataRouter");
+const { parseDataRouter } = require("./routes/parseDataRouter");
+
 const config = require('./dbConfig');
 const { TablesName } = require('./constant');
 const { convertFileToPlanText } = require('./helpers/dataTranscation');
 
 
 app.use("/rawData", rawDataRouter);
+app.use("/parseData", parseDataRouter);
 app.use("/user", userRouter);
 
 app.get('/', async (req, res) => {
     res.send("hello world")
 })
 
-app.post('/addFile',async(req,res) =>  {
-  try {
-    if (req.files) {
+// app.post('/addFile',async(req,res) =>  {
+//   try {
+//     if (req.files) {
         
-      let sampleFile = req.files.file;
-      let uploadpath = __dirname + '/upload/' + sampleFile.name;
-      console.log("upload path is : ", uploadpath);
-      console.log("file is : ", sampleFile);
-      sampleFile.mv(uploadpath, function (err) {
-        if (err) return res.status(500).send(err);
-        console.log("File saved");
-        res.send("file saved");
-      })
-    }
-  } 
-       catch (error) {
-      console.log("error in file reading", error);
-      res.send("Error in file sending");
-  }
-})
+//       let sampleFile = req.files.file;
+//       let uploadpath = __dirname + '/upload/' + sampleFile.name;
+//       console.log("upload path is : ", uploadpath);
+//       console.log("file is : ", sampleFile);
+//       sampleFile.mv(uploadpath, function (err) {
+//         if (err) return res.status(500).send(err);
+//         console.log("File saved");
+//         res.send("file saved");
+//       })
+//     }
+//   } 
+//        catch (error) {
+//       console.log("error in file reading", error);
+//       res.send("Error in file sending");
+//   }
+// })
 
 
 cron.schedule("0 0 * * *", async() => {
@@ -89,13 +92,14 @@ cron.schedule("30 0 * * *", async() => {
 });
 
 // parse raw data everyday
-cron.schedule("* 3 * * *", async() => {
-  await parseData()
-})
-// app.get('/run', async(req, res) => {
+// cron.schedule("* 3 * * *", async() => {
 //   await parseData()
-//   res.send("Done")
-// });
+// })
+app.get('/run', async(req, res) => {
+  // await parseData()
+  await createFinalDataCsv()
+  res.send("Done")
+});
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)

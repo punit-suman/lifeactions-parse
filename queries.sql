@@ -33,5 +33,6 @@ create table apps_m (
     created_at DATETIMEOffset default GETDATE(),
 	created_by int default 1,
 	modified_at datetimeoffset,
-	modified_by int
+	modified_by int,
+	status varchar default 'active'
 )
