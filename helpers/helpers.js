@@ -40,11 +40,13 @@ const createNewTable = async (tableName, type) => {
             switch (type) {
                 case TablesName.DATA_TRANSACTION:
                             query = TableQueries.data_transaction(tableName);               
-                             break;
-            
+                            break;
                 case TablesName.FILE:
-                             query = TableQueries.file(tableName);
-                             break;
+                            query = TableQueries.file(tableName);
+                            break;
+                case TablesName.FINAL_DATA:
+                            query = TableQueries.final_data(tableName);
+                            break;
                 default: query = null;
                     break;
             }
@@ -121,6 +123,7 @@ const checkAndCreateNxtDayDataTbl = async(type) => {
 }
 module.exports = {
     checkAndCreateTdyDataTbl,
-    checkAndCreateNxtDayDataTbl
-
+    checkAndCreateNxtDayDataTbl,
+    createNewTable,
+    checkTable
 }
