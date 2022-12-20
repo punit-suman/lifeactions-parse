@@ -95,9 +95,18 @@ cron.schedule("30 0 * * *", async() => {
 // cron.schedule("* 3 * * *", async() => {
 //   await parseData()
 // })
-app.get('/run', async(req, res) => {
-  // await parseData()
+
+// parse raw data
+cron.schedule("0 3 * * *", async() => {
+  await parseData()
+});
+
+// create final data csv file
+cron.schedule("0 6 * * *", async() => {
   await createFinalDataCsv()
+});
+
+app.get('/run', async(req, res) => {
   res.send("Done")
 });
 

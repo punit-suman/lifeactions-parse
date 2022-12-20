@@ -34,6 +34,8 @@ const parseData = async() => {
             var insFinalDataReq = new sql.Request()
             const finalDataTbl = new sql.Table('final_data') // or temporary table, e.g. #temptable
             finalDataTbl.create = true
+            finalDataTbl.columns.add('data_transaction_id', sql.Int, {nullable: true})
+            finalDataTbl.columns.add('user_id', sql.Int, {nullable: true})
             finalDataTbl.columns.add('category_id', sql.Int, {nullable: true})
             finalDataTbl.columns.add('app_id', sql.Int, {nullable: true})
             finalDataTbl.columns.add('pattern_id', sql.Int, {nullable: true})
@@ -94,6 +96,8 @@ const parseData = async() => {
                         if (eventDescRes && eventDescRes.recordset.length > 0) {
                             data = eventDescRes.recordset[0]
                             data = {
+                                data_transaction_id: d.id,
+                                user_id: d.user_id,
                                 category_id: data.category_id,
                                 app_id: data.app_id,
                                 // category_name: ctname ? ctname : 'NA',
@@ -114,6 +118,8 @@ const parseData = async() => {
                         // var appname = appsList.find(a => a.packageName == info.split('*')[0].trim())?.app_name
                         var pckgName = info.split('*')[0].trim()
                         data = {
+                            data_transaction_id: d.id,
+                            user_id: d.user_id,
                             category_id: ctid ? ctid : null,
                             app_id: appid ? appid : null,
                             // category_name: ctname ? ctname : 'NA',
@@ -137,7 +143,10 @@ const parseData = async() => {
                     //     data.data_description,
                     //     data.eventTime
                     // ])
-                    finalDataTbl.rows.add(data.category_id,
+                    finalDataTbl.rows.add(
+                        data.data_transaction_id,
+                        data.user_id,
+                        data.category_id,
                         data.app_id,
                         data.pattern_id,
                         data.eventInfo,
@@ -164,12 +173,12 @@ const createFinalDataCsv = async() => {
         var suffix = `${prevDay.getDate()}_${prevDay.getMonth()+1}_${prevDay.getFullYear()}`
         
         let csvData = []
-        columns = ['category_name', 'app_name', 'pattern_info', 'eventInfo', 'packageName', 'data_text', 'data_description', 'event_time', 'created_at']
+        columns = ['user_id', 'category_name', 'app_name', 'pattern_info', 'eventInfo', 'packageName', 'data_text', 'data_description', 'event_time', 'created_at']
 
         var sqlConn = await sql.connect(config)
         if (sqlConn) {
             var request = new sql.Request()
-            var query = `SELECT fd.id, acm.category_name, apps_m.app_name, dpm.name as 'pattern_info'
+            var query = `SELECT fd.id, fd.user_id, acm.category_name, apps_m.app_name, dpm.name as 'pattern_info'
                 , fd.eventInfo, fd.package_name, data_text, data_description, event_time, fd.created_at
                 FROM final_data as fd
                 left join apps_m on apps_m.app_id = fd.app_id
@@ -180,6 +189,7 @@ const createFinalDataCsv = async() => {
             if (response && response.recordset.length > 0) {
                 response.recordset.forEach(r => {
                     csvData.push([
+                        r.user_id,
                         r.category_name,
                         r.app_name,
                         r.pattern_info,
