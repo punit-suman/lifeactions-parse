@@ -49,43 +49,35 @@ app.get('/', async (req, res) => {
 //   }
 // })
 
+const checkAndCreateTables = async(type) => {
+  try {
+    var res = await checkAndCreateTdyDataTbl(type);
+    if (res.error) {
+      console.log("Error in creating today table")
+    } else {
+      console.log("Table created")
+    }
+    res = await checkAndCreateNxtDayDataTbl(type);
+    if (res.error) {
+      console.log("Error in creating next day table")
+    } else {
+      console.log("Table created")
+    }
+  } catch(err) {
+    console.log(err.message)
+  }
+}
 
 cron.schedule("0 0 * * *", async() => {
-  var res = await checkAndCreateTdyDataTbl(TablesName.FILE);
-  if (res.error) {
-    console.log("Error in creating today table")
-  } else {
-    console.log("Table created")
-  }
-  res = await checkAndCreateNxtDayDataTbl(TablesName.FILE);
-  if (res.error) {
-    console.log("Error in creating next day table")
-  } else {
-    console.log("Table created")
-  }
-});
-
-// local time
-cron.schedule("5 0 * * *", async() => {
-  var res = await checkAndCreateTdyDataTbl(TablesName.DATA_TRANSACTION);
-  if (res.error) {
-    console.log("Error in creating today table")
-  } else {
-    console.log("Table created")
-  }
-  res = await checkAndCreateNxtDayDataTbl(TablesName.DATA_TRANSACTION);
-  if (res.error) {
-    console.log("Error in creating next day table")
-  } else {
-    console.log("Table created")
-  }
+  await checkAndCreateTables(TablesName.FILE)
+  await checkAndCreateTables(TablesName.DATA_TRANSACTION)
 });
 
 
-cron.schedule("30 0 * * *", async() => {
+cron.schedule("15 0 * * *", async() => {
   var res = await convertFileToPlanText();
   if (res.error) {
-    console.log("Error in creating today table")
+    console.log("Error in converting data")
   } else {
     console.log("Table created")
   }
@@ -97,7 +89,7 @@ cron.schedule("30 0 * * *", async() => {
 // })
 
 // parse raw data
-cron.schedule("0 3 * * *", async() => {
+cron.schedule("0 2 * * *", async() => {
   await parseData()
 });
 
@@ -107,6 +99,11 @@ cron.schedule("0 6 * * *", async() => {
 });
 
 app.get('/run', async(req, res) => {
+  // await convertFileToPlanText();
+  // await parseData()
+  // await checkAndCreateTables(TablesName.FILE)
+  // await checkAndCreateTables(TablesName.DATA_TRANSACTION)
+  // await createFinalDataCsv()
   res.send("Done")
 });
 
