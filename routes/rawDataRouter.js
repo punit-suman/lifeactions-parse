@@ -151,9 +151,10 @@ rawDataRouter.get('/createcsv/:date', async (req, res) => {
 
 rawDataRouter.post('/writeFile', multer().single('file') ,async (req, res) => {
     try {
-    console.log("request is : ", req.file);
-    console.log("request is files : ", req.filename);
-    console.log("requst body is : ",req);
+        console.log("request is--------- : ", req);
+        console.log("request file is : ", req.file);
+        console.log("requst body is------ : ",req.body);
+        console.log("requst header userid------ : ",req.headers.userid);
     var data = {error: false}
     const today = new Date()
     var tdyDaySuffix = `${today.getDate()}_${today.getMonth()+1}_${today.getFullYear()}`
@@ -161,7 +162,7 @@ rawDataRouter.post('/writeFile', multer().single('file') ,async (req, res) => {
         if (req.file) {
           
             let sampleFile = req.file;
-            let userId = req.userId;
+            let userId = req.headers.userid;
           
           var sqlConn = await sql.connect(config)
 

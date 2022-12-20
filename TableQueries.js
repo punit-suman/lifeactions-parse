@@ -23,4 +23,23 @@ function file(tableName) {
     )`
 }
 
-module.exports = { data_transaction, file };
+function final_data(tableName) {
+    
+    return `create table ${tableName} (
+        id int IDENTITY(1,1) PRIMARY KEY,
+        data_transaction_id int,
+        user_id int,
+        category_id int,
+        app_id int,
+        pattern_id int,
+        event_info varchar(max),
+        package_name varchar(max),
+        data_text varchar(max),
+        data_description varchar(max),
+        event_time DATETIMEOFFSET,
+        created_at DATETIMEOFFSET default GETDATE()
+    )`
+
+}
+
+module.exports = { data_transaction, file, final_data };
