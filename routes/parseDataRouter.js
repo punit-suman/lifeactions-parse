@@ -212,8 +212,8 @@ const createFinalDataCsv = async() => {
                 FROM ${fnlDataTblName} as fd
                 left join apps_m on apps_m.app_id = fd.app_id
                 left join data_patterns_m as dpm on dpm.id = fd.pattern_id
-                left join app_category_m as acm on acm.id = fd.category_id
-                where cast(event_time as date) = (select DATEADD(day, -1, CAST(GETDATE() AS date)))`
+                left join app_category_m as acm on acm.id = fd.category_id`
+                // --where cast(event_time as date) = (select DATEADD(day, -1, CAST(GETDATE() AS date)))
             var response = await request.query(query)
             if (response && response.recordset.length > 0) {
                 response.recordset.forEach(r => {
@@ -222,7 +222,7 @@ const createFinalDataCsv = async() => {
                         r.category_name,
                         r.app_name,
                         r.pattern_info,
-                        r.eventInfo,
+                        r.event_info,
                         r.package_name,
                         r.data_text,
                         r.data_description,
