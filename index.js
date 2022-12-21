@@ -98,6 +98,11 @@ cron.schedule("0 6 * * *", async() => {
   await createFinalDataCsv()
 });
 
+// cron job test
+cron.schedule("* * * * *", async() => {
+  console.log('cron job running...')
+});
+
 app.get('/run', async(req, res) => {
   // await convertFileToPlanText();
   // await parseData()
