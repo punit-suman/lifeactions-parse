@@ -1,4 +1,10 @@
-var config = {
+require("msnodesqlv8");
+
+var production = true
+
+var sql = production ? require('mssql') : require('mssql/msnodesqlv8')
+
+var config = production ? {
     server: 'lifeactions-db.ckzcfxihz4uf.ap-south-1.rds.amazonaws.com', 
     database: 'lifeactions',
     user: 'admin',
@@ -14,6 +20,21 @@ var config = {
         idleTimeoutMillis:30000
     },
     requestTimeout: 300000
+} : {
+    server: 'localhost', 
+    database: 'lifeActions',
+    driver: 'msnodesqlv8',
+    user: '',
+    port: 1433,
+    options: {
+        trustedConnection: true,
+        trustServerCertificate: true,
+        Encrypt: true,
+    },
+    requestTimeout: 300000
 };
 
-module.exports = config
+module.exports = {
+    config,
+    sql
+}

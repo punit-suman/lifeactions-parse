@@ -1,7 +1,6 @@
 const userRouter = require('express').Router();
 
-var sql = require("mssql");
-const config = require('../dbConfig')
+const { sql, config } = require('../dbConfig')
 
 userRouter.post('/create', async(req, res) => {
     var data = {error: false}

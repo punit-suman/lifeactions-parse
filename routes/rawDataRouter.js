@@ -2,8 +2,7 @@ const rawDataRouter = require('express').Router();
 const stringify = require('csv-stringify-as-promised');
 const path = require('path');
 const fs = require('fs');
-var sql = require("mssql");
-const config = require('../dbConfig')
+const { sql, config } = require('../dbConfig')
 const multer = require('multer');
 const { TablesName } = require('../constant');
 
@@ -151,10 +150,10 @@ rawDataRouter.get('/createcsv/:date', async (req, res) => {
 
 rawDataRouter.post('/writeFile', multer().single('file') ,async (req, res) => {
     try {
-        console.log("request is--------- : ", req);
-        console.log("request file is : ", req.file);
-        console.log("requst body is------ : ",req.body);
-        console.log("requst header userid------ : ",req.headers.userid);
+        // console.log("request is--------- : ", req);
+        // console.log("request file is : ", req.file);
+        // console.log("requst body is------ : ",req.body);
+        // console.log("requst header userid------ : ",req.headers.userid);
     var data = {error: false}
     const today = new Date()
     var tdyDaySuffix = `${today.getDate()}_${today.getMonth()+1}_${today.getFullYear()}`
@@ -198,7 +197,7 @@ rawDataRouter.post('/writeFile', multer().single('file') ,async (req, res) => {
         console.log("error.message -- ", error.message)
         data['error'] = true
         data['message'] = "Internal Error"
-        res.send(data)
+        res.status(500).send(data)
     }
 })
 

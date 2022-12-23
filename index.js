@@ -3,7 +3,7 @@ const cors = require("cors");
 const logger = require("morgan");
 const cron = require("node-cron");
 const {checkAndCreateTdyDataTbl, checkAndCreateNxtDayDataTbl } = require('./helpers/helpers');
-const { parseData, createFinalDataCsv } = require('./routes/parseDataRouter')
+const { parseData, createFinalDataCsv, decryptStr, encrypt } = require('./routes/parseDataRouter')
 
 const app = express()
 const port = 8080
@@ -109,6 +109,8 @@ app.get('/run', async(req, res) => {
   // await checkAndCreateTables(TablesName.FILE)
   // await checkAndCreateTables(TablesName.DATA_TRANSACTION)
   // await createFinalDataCsv()
+  // await decryptStr()
+  // await encrypt()
   res.send("Done")
 });
 
