@@ -1,6 +1,6 @@
 const { TablesName } = require("../constant")
-var sql = require("mssql");
-const config = require('../dbConfig')
+const { sql, config } = require('../dbConfig');
+const { decryptStr } = require("../routes/parseDataRouter");
 
 async function convertFileToPlanText() {
     try {
@@ -34,6 +34,12 @@ async function convertFileToPlanText() {
                 table.columns.add('user_id',sql.Int,{ nullable: true })
                 table.columns.add('file_id',sql.Int,{ nullable: true })
                 
+                // for (let i = 0; i < Files.length; i++) {
+                //     let item = Files[i]
+                //     console.log("data - ", (item.data).toString())
+                //     await decryptStr((item.data).toString())
+                // }
+                // return
                 Files.forEach(item => table.rows.add((item.data).toString(), item.user_id, item.id));
             
                 const results = await request.bulk(table);

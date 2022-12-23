@@ -1,9 +1,10 @@
 const parseDataRouter = require('express').Router();
-var sql = require("mssql");
-const config = require('../dbConfig')
+const { sql, config } = require('../dbConfig')
 const stringify = require('csv-stringify-as-promised');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
+const pbkdf2Hmac = require('pbkdf2-hmac')
 const { TablesName } = require('../constant');
 const { createNewTable, checkTable } = require('../helpers/helpers')
 
@@ -49,7 +50,6 @@ const parseData = async() => {
             var data_patterns = eventResponse?.recordset
             
             var eventDescReq = new sql.Request()
-                            .input('eventInfo', info)
             var eventDescQuery = `select acm.category_name, am.app_name, am.app_id, am.category_id, dpm.id, dpm.name as 'pattern_info', dpm.eventInfo, am.packageName
                 from data_patterns_m as dpm
                 left join apps_m as am on am.app_id = dpm.app_id
@@ -71,7 +71,7 @@ const parseData = async() => {
             finalDataTbl.columns.add('data_text', sql.NVarChar(5000), {nullable: true})
             finalDataTbl.columns.add('data_description', sql.NVarChar(5000), {nullable: true})
             finalDataTbl.columns.add('event_time', sql.DateTimeOffset, {nullable: true})
-            // columns = ['category_name', 'app_name', 'pattern_info', 'eventInfo', 'packageName', 'data_1_text', 'data_2_description', 'time']
+            
             for (let i = 0; i < rawData.length; i++) {
                 let d = rawData[i]
                 console.log(d.id)
@@ -89,7 +89,7 @@ const parseData = async() => {
                 // console.log(eventIndex)
                 while(eventIndex != -1) {
                     eventIndex = nxtEventIndex
-                    const info = str.substring(infoIndex+11, textIndex-1)
+                    const info = str.substring(infoIndex+11, textIndex-2)
                     const text = str.substring(textIndex+6, descIndex-2)
                     const desc = str.substring(descIndex+12, timeIndex-1)
                     let time
@@ -191,9 +191,6 @@ const parseData = async() => {
                 //     console.log('insertion error')
                 // }
             }
-                // console.log(csvData)
-            // var insFinalDataQuery = `insert into final_data(category_id, app_id, pattern_id, eventInfo
-            //                             , package_name, data_text, data_description, event_time) VALUES`
         }
     } catch(err) {
         console.log("parse error: ", err.message)
@@ -271,8 +268,44 @@ parseDataRouter.get('/getCsv', async(req, res) => {
     }
 })
 
+const encrypt = async() => {
+    let text = "enter"
+    var key = await pbkdf2Hmac('my_super_secret_key_ho_ho_ho', 'ssshhhhhhhhhhh!!!!', 65536, 32, 'SHA-256');
+    let buff = Buffer.from(key)
+    const iv = Buffer.from([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]);
+    // Creating Cipheriv with its parameter
+    let cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(buff), iv);
+    // Updating text
+    let encrypted = cipher.update(text);
+    
+    // Using concatenation
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+
+    // Returning iv and encrypted data
+    console.log(encrypted.toString('base64'));
+}
+
+const decryptStr = async(text) => {
+    try {
+        // let text = Buffer.from('gfqTgGhyMJfykc+gR8MqOQ==')
+        // let text = 'UE4mYUELYGgrRVNt+84S7Q=='
+        var key = await pbkdf2Hmac('my_super_secret_key_ho_ho_ho', 'ssshhhhhhhhhhh!!!!', 65536, 32, 'SHA-256');
+        let buff = Buffer.from(key)
+        const iv = Buffer.from([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]);
+        let dec = crypto.createDecipheriv('aes-256-cbc', Buffer.from(buff), iv);
+        let decrypted = dec.update(text, "base64", "utf8");
+        // decrypted += dec.final("utf8");
+        console.log("---", decrypted.toString())
+    } catch (err) {
+        console.log("error: ", err.message)
+    }
+}
+
+
 module.exports = {
     parseDataRouter,
     parseData,
-    createFinalDataCsv
+    createFinalDataCsv,
+    decryptStr,
+    encrypt
 }
