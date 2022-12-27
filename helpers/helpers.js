@@ -1,29 +1,37 @@
-var sql = require("mssql");
+// var sql = require("mssql");
 const { TablesName } = require("../constant");
-const config = require('../dbConfig');
+// const config = require('../dbConfig');
 const TableQueries = require("../TableQueries");
 
+const { config } = require('../dbConfigMySQL')
+
+
 const checkTable = async(tableName) => {
-    var data = {error: false}
-    var sqlConn = await sql.connect(config)
-    if (sqlConn) {
-        var request = new sql.Request()
-            .input('tableName', sql.VarChar, tableName)
-        var query = `SELECT * 
-            FROM INFORMATION_SCHEMA.TABLES 
-            WHERE TABLE_SCHEMA = 'dbo' 
-            AND  TABLE_NAME = @tableName`
-        var response = await request.query(query)
-        // console.log(response)
-        if (response.recordset.length > 0) {
-            data['tableFound'] = true
-        } else {
-            data['tableFound'] = false
-        }
+    try {
+        var data = {error: false}
+        var query = `SHOW TABLES LIKE '${tableName}'`
+        let checkTblPromise = new Promise(function(resolve, reject) {
+            config.query(query, function(err, result) {
+                if (err) {
+                    data['error'] = true
+                    data['errorMessage'] = "Database connection error"
+                    reject()
+                } else {
+                    if (result.length > 0) {
+                        data['tableFound'] = true
+                        resolve()
+                    } else {
+                        data['tableFound'] = false
+                        resolve()
+                    }
+                }
+            })
+        })
+        await checkTblPromise
         return data
-    } else {
+    } catch(err) {
         data['error'] = true
-        data['errorMessage'] = "Database connection error"
+        console.log(err.message)
         return data
     }
 }
@@ -32,35 +40,43 @@ const createNewTable = async (tableName, type) => {
     console.log("In create new table : ", tableName, "  type is : ", type);
     var data = {error: false}
     try {
-        var sqlConn = await sql.connect(config)
-        if (sqlConn) {
-            var request = new sql.Request()
-                .input('tableName', sql.VarChar, tableName)
-            var query;
-            switch (type) {
-                case TablesName.DATA_TRANSACTION:
-                            query = TableQueries.data_transaction(tableName);               
-                            break;
-                case TablesName.FILE:
-                            query = TableQueries.file(tableName);
-                            break;
-                case TablesName.FINAL_DATA:
-                            query = TableQueries.final_data(tableName);
-                            break;
-                default: query = null;
-                    break;
-            }
-            if (query) {
-                var response = await request.query(query)
-                console.log(response)
-            } else {
-                console.log("Unable to set query for table creation");
-            }
+        var query;
+        switch (type) {
+            case TablesName.DATA_TRANSACTION:
+                        query = TableQueries.data_transaction(tableName);               
+                        break;
+            case TablesName.FILE:
+                        query = TableQueries.file(tableName);
+                        break;
+            case TablesName.FINAL_DATA:
+                        query = TableQueries.final_data(tableName);
+                        break;
+            default: query = null;
+                break;
         }
+        if (query) {
+            let createTblPromise = new Promise(function(resolve, reject) {
+                config.query(query, function(err) {
+                    if (err) {
+                        data['error'] = true
+                        data['errorMessage'] = err.message
+                        resolve()
+                    } else {
+                        data['message'] = 'Table created'
+                        resolve()
+                    }
+                })
+            })
+            await createTblPromise
+        } else {
+            console.log("Unable to set query for table creation");
+        }
+        return data
     } catch(error) {
         console.log("error.message -- ", error.message)
         data['error'] = true
         data['message'] = "Internal Error"
+        return data
     }
     
 }
@@ -75,10 +91,16 @@ const checkAndCreateTdyDataTbl = async(type) => {
         var isTbl = await checkTable(tableName)
         if (!isTbl.error) {
             if (!isTbl.tableFound) {
-                await createNewTable(tableName,type);
-                response.tblCreated = true
+                let newTblRes = await createNewTable(tableName,type);
+                if (newTblRes.error) {
+                    response['error'] = true
+                    response['message'] = newTblRes.errorMessage
+                } else {
+                    response.tblCreated = true
+                }
             } else if (isTbl.tableFound) {
                 console.log('Table with same name found of type ', type);
+                response['error'] = true
                 response['message'] = `Table with same name found of type ${type}`
             }
         } else {
@@ -104,10 +126,16 @@ const checkAndCreateNxtDayDataTbl = async(type) => {
         isTbl = await checkTable(tableName)
         if (!isTbl.error) {
             if (!isTbl.tableFound) {
-                await createNewTable(tableName,type);
-                response.tblCreated = true
+                let newTblRes = await createNewTable(tableName,type);
+                if (newTblRes.error) {
+                    response['error'] = true
+                    response['message'] = newTblRes.errorMessage
+                } else {
+                    response.tblCreated = true
+                }
             } else if (isTbl.tableFound) {
                 console.log('Table with same name found of type ', type);
+                response['error'] = true
                 response['message'] = `Table with same name found of type ${type}`
             }
         } else {

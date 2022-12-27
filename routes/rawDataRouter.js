@@ -2,39 +2,34 @@ const rawDataRouter = require('express').Router();
 const stringify = require('csv-stringify-as-promised');
 const path = require('path');
 const fs = require('fs');
-const { sql, config } = require('../dbConfig')
+// const { sql, config } = require('../dbConfig')
+const { config } = require('../dbConfigMySQL')
 const multer = require('multer');
 const { TablesName } = require('../constant');
 
 rawDataRouter.post('/add', async(req, res) => {
     var data = {error: false}
     try {
-        
         const today = new Date()
         var tdyDaySuffix = `${today.getDate()}_${today.getMonth()+1}_${today.getFullYear()}`
         let tableName = `data_transaction_${tdyDaySuffix}`
 
-        var sqlConn = await sql.connect(config)
-        
-        if (sqlConn) {
-            var request = new sql.Request()
-                .input('data', sql.VarChar, req.body.data)
-                .input('user_id', sql.Int, parseInt(req.body.userid))
-            
-            var query = `insert into ${tableName}(data, user_id) OUTPUT inserted.id values (@data, @user_id)`
-            
-            var response = await request.query(query)
-            
-            if (response && response.rowsAffected == 1) {
-                data['message'] = "Data stored successfully"
-            } else {
-                data['message'] = "Data could not be registered"
+        var query = `insert into ${tableName}(data, user_id) values ?`;
+        let values = [
+            [req.body.data, req.body.userid]
+        ]
+        config.query(query, [values], function(err, result) {
+            if (err) {
+                data['error'] = true
+                data['message'] = err.message
+                res.status(500).send(data)
             }
-        } else {
-            data['error'] = true
-            data['message'] = "Database connection error"
-        }
-        res.send(data)
+            if (result && result.affectedRows > 0) {
+                data['error'] = false
+                data['message'] = "Data inserted"
+                res.status(200).send(data)
+            }
+        })
     } catch (error) {
         console.log("req.body -- ", req.body)
         console.log("error.message -- ", error.message)
@@ -47,25 +42,25 @@ rawDataRouter.post('/add', async(req, res) => {
 rawDataRouter.get('/getData', async(req, res) => {
     var data = {error: false}
     try {
-        var sqlConn = await sql.connect(config)
-        if (sqlConn) {
-            var request = new sql.Request()
-            const today = new Date()
-            var tdyDaySuffix = `${today.getDate()}_${today.getMonth()+1}_${today.getFullYear()}`
-            let tableName = `data_transaction_${tdyDaySuffix}`
-            var query = `select * from ${tableName}`
-            var response = await request.query(query)
-            if (response && response.recordset) {
-                data['data'] = response.recordset
-                data['message'] = "Data sent successfully"
-            } else {
-                data['message'] = "Data could not sent"
+        const today = new Date()
+        var tdyDaySuffix = `${today.getDate()}_${today.getMonth()+1}_${today.getFullYear()}`
+        let tableName = `data_transaction_${tdyDaySuffix}`
+        
+        var query = `select * from ${tableName}`;
+
+        config.query(query, function(err, result) {
+            if (err) {
+                data['error'] = true
+                data['message'] = err.message
+                res.status(500).send(data)
             }
-        } else {
-            data['error'] = true
-            data['message'] = "Database connection error"
-        }
-        res.send(data)
+            if (result) {
+                console.log(result)
+                data['error'] = false
+                data['data'] = result
+                res.status(200).send(data)
+            }
+        })
     } catch (error) {
         console.log("req.body -- ", req.body)
         console.log("error.message -- ", error.message)
@@ -102,10 +97,7 @@ rawDataRouter.get('/getcsv/:date', async(req, res) => {
 rawDataRouter.get('/createcsv/:date', async (req, res) => {
     var data = { error: false }
     try {
-        var sqlConn = await sql.connect(config)
-        if (sqlConn) {
-            var request = new sql.Request()
-            var date = req.params.date
+        var date = req.params.date
             var daySuffix
             if (!date) {
                 const today = new Date()
@@ -113,10 +105,19 @@ rawDataRouter.get('/createcsv/:date', async (req, res) => {
             } else {
                 daySuffix = date
             }
-            let tableName = `data_transaction_${daySuffix}`
-            var query = `select * from ${tableName}`
-            var response = await request.query(query)
-            if (response && response.recordset) {
+        let tableName = `data_transaction_${daySuffix}`
+
+        var query = `select * from ${tableName}`;
+
+        config.query(query, async function(err, result) {
+            if (err) {
+                data['error'] = true
+                data['message'] = err.message
+                res.status(500).send(data)
+            }
+            if (result) {
+                data['error'] = false
+                data['data'] = result
                 let csvData = []
                 columns = ['Id', 'Data', 'UserId', 'CreatedAt']
                 response.recordset.map(ap => {
@@ -131,14 +132,9 @@ rawDataRouter.get('/createcsv/:date', async (req, res) => {
                 fs.writeFileSync(filePath, '\ufeff' + raw, { encoding: 'utf16le' }, { flag: 'w' });
                 data['data'] = response.recordset
                 data['message'] = "Data sent successfully"
-            } else {
-                data['message'] = "Data could not sent"
+                res.status(200).send(data)
             }
-        } else {
-            data['error'] = true
-            data['message'] = "Database connection error"
-        }
-        res.send(data)
+        })
     } catch (error) {
         console.log("req.body -- ", req.body)
         console.log("error.message -- ", error.message)
@@ -162,36 +158,32 @@ rawDataRouter.post('/writeFile', multer().single('file') ,async (req, res) => {
           
             let sampleFile = req.file;
             let userId = req.headers.userid;
-          
-          var sqlConn = await sql.connect(config)
-
-            if (sqlConn) {
-                var request = new sql.Request()
-                    .input('fileName', sql.VarChar, sampleFile.originalname)
-                    .input('data', sql.VarBinary, sampleFile.buffer)
-                    .input('type', sql.VarChar, sampleFile.mimetype)
-                    .input('userId', sql.Int, userId);
-                var query = `insert into ${tableName}(file_name, data, type, user_id) values (@fileName, @data, @type, @userId)`
-                var response = await request.query(query)
-                
-                if (response && response.rowsAffected == 1) {
-                  console.log("Data saved successfully");  
-                  data['message'] = "Data stored successfully"
-                } else {
-                  console.log("Data not saved");  
-                  data['message'] = "Data could not be registered"
-                }
-            } else {
-              console.log("Connection error");  
-              data['error'] = true
-            data['message'] = "Database connection error"
+            if (!userId) {
+                userId = 0
             }
+            var query = `insert into ${tableName}(file_name, data, type, user_id) values ?`;
+            let values = [
+                [sampleFile.originalname, sampleFile.buffer, sampleFile.mimetype, userId]
+            ]
+            config.query(query, [values], function(err, result) {
+                if (err) {
+                    data['error'] = true
+                    data['message'] = err.message
+                    console.log(err.message)
+                    res.status(500).send(data)
+                }
+                if (result && result.affectedRows > 0) {
+                    data['error'] = false
+                    data['message'] = "Data inserted"
+                    res.status(200).send(data)
+                }
+            })
         } else {
             console.log("File not present");
             data['error'] = true
             data['message'] = "Request without File";
+            res.status(400).send(data);
         }
-        res.send(data);
     } catch (error) {
         console.log("req.body -- ", req.body)
         console.log("error.message -- ", error.message)
@@ -208,24 +200,21 @@ rawDataRouter.get('/readFile', async (req, res) => {
         const today = new Date()
         var tdyDaySuffix = `${today.getDate()}_${today.getMonth()+1}_${today.getFullYear()}`
         let tableName = `${TablesName.FILE}_${tdyDaySuffix}`
-            var sqlConn = await sql.connect(config)
-          
-            if (sqlConn) {
-                var request = new sql.Request()
-                var query = `select * from ${tableName}`
-                var response = await request.query(query)
-                if (response && response.recordset) {
-                    console.log("response is : ", response.recordset);
-                    data['data'] = response.recordset
-                    data['message'] = "Data sent successfully"
-                } else {
-                    data['message'] = "Data could not sent"
-                }
-            } else {
+        
+        var query = `select * from ${tableName}`;
+        config.query(query, function(err, result) {
+            if (err) {
                 data['error'] = true
-                data['message'] = "Database connection error"
-        }
-        res.send(data)
+                data['message'] = err.message
+                res.status(500).send(data)
+            }
+            if (result) {
+                console.log(result)
+                data['error'] = false
+                data['data'] = result
+                res.status(200).send(data)
+            }
+        })
     } catch (error) {
         console.log("req.body -- ", req.body)
         console.log("error.message -- ", error.message)

@@ -55,13 +55,14 @@ const checkAndCreateTables = async(type) => {
     if (res.error) {
       console.log("Error in creating today table")
     } else {
-      console.log("Table created")
+      console.log("Today table created")
     }
     res = await checkAndCreateNxtDayDataTbl(type);
     if (res.error) {
+      // console.log(res.message)
       console.log("Error in creating next day table")
     } else {
-      console.log("Table created")
+      console.log("Next day table created")
     }
   } catch(err) {
     console.log(err.message)
@@ -71,6 +72,7 @@ const checkAndCreateTables = async(type) => {
 cron.schedule("0 0 * * *", async() => {
   await checkAndCreateTables(TablesName.FILE)
   await checkAndCreateTables(TablesName.DATA_TRANSACTION)
+  await checkAndCreateTables(TablesName.FINAL_DATA)
 });
 
 
@@ -108,6 +110,7 @@ app.get('/run', async(req, res) => {
   // await parseData()
   // await checkAndCreateTables(TablesName.FILE)
   // await checkAndCreateTables(TablesName.DATA_TRANSACTION)
+  // await checkAndCreateTables(TablesName.FINAL_DATA)
   // await createFinalDataCsv()
   // await decryptStr()
   // await encrypt()

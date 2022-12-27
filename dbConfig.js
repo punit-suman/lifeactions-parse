@@ -1,6 +1,6 @@
 require("msnodesqlv8");
 
-var production = true
+var production = false
 
 var sql = production ? require('mssql') : require('mssql/msnodesqlv8')
 

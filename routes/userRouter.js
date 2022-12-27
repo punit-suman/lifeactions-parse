@@ -1,33 +1,28 @@
 const userRouter = require('express').Router();
 
-const { sql, config } = require('../dbConfig')
+// const { sql, config } = require('../dbConfig')
+const { config } = require('../dbConfigMySQL')
 
 userRouter.post('/create', async(req, res) => {
     var data = {error: false}
     try {
-        var sqlConn = await sql.connect(config)
-        console.log(req.body)
-        if (sqlConn) {
-            var request = new sql.Request()
-                .input('about', sql.VarChar, req.body.about)
-                .input('education', sql.VarChar, req.body.education)
-                .input('occupation', sql.VarChar, req.body.occupation)
-                .input('durables_used', sql.VarChar, req.body.durables_used)
-            var query = `insert into users(about, education, occupation, durables_used) OUTPUT inserted.user_id values (@about, @education, @occupation, @durables_used)`
-            var response = await request.query(query)
-            // var id = response.recordset[0].user_id
-            // var hash = (id*9*12*2022);
-            if (response && response.rowsAffected == 1) {
-                data['user_id'] = response.recordset[0].user_id
-                data['message'] = "User registered successfully"
-            } else {
-                data['message'] = "User could not be registered"
+        var query = `insert into users(about, education, occupation, durables_used) values ?`;
+        let values = [
+            [req.body.about, req.body.education, req.body.occupation, req.body.durables_used]
+        ]
+        config.query(query, [values], function(err, result) {
+            if (err) {
+                data['error'] = true
+                data['message'] = err.message
+                res.status(500).send(data)
             }
-        } else {
-            data['error'] = true
-            data['message'] = "Database connection error"
-        }
-        res.send(data)
+            if (result && result.affectedRows > 0) {
+                data['error'] = false
+                data['message'] = "Data inserted"
+                data['user_id'] = result.insertId
+                res.status(200).send(data)
+            }
+        })
     } catch (error) {
         console.log("req.body -- ", req.body)
         console.log("error.message -- ", error.message)
@@ -40,21 +35,20 @@ userRouter.post('/create', async(req, res) => {
 userRouter.get('/getusers', async(req, res) => {
     var data = {error: false}
     try {
-        var sqlConn = await sql.connect(config)
-        if (sqlConn) {
-            var request = new sql.Request();
-            var query = `Select * from users`
-            var response = await request.query(query)
-            if (response && response.recordset) {
-                data['data'] = response.recordset
-            } else {
-                data['message'] = "No data"
+        var query = `select * from users`;
+        config.query(query, function(err, result) {
+            if (err) {
+                data['error'] = true
+                data['message'] = err.message
+                res.status(500).send(data)
             }
-        } else {
-            data['error'] = true
-            data['message'] = "Database connection error"
-        }
-        res.send(data)
+            if (result) {
+                console.log(result)
+                data['error'] = false
+                data['data'] = result
+                res.status(200).send(data)
+            }
+        })
     } catch (error) {
         console.log(error.message)
         data['error'] = true

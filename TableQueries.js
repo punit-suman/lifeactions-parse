@@ -3,41 +3,40 @@
 function data_transaction(tableName) {
     
     return `Create table ${tableName} (
-        id int IDENTITY(1,1) PRIMARY KEY,
-        data varchar(max),
+        id int PRIMARY KEY AUTO_INCREMENT,
+        data text,
         user_id int,
         file_id int,
-        created_at DATETIMEOffset default GETDATE()
+        created_at TIMESTAMP default now()
     )`
-
 }
 
 function file(tableName) {
     return `CREATE TABLE ${tableName} (
-        id int IDENTITY(1,1) PRIMARY KEY,
-        file_name varchar(max),
-        data varbinary(max),
+        id int PRIMARY KEY AUTO_INCREMENT,
+        file_name varchar(511),
+        data blob,
         type varchar(255),
         user_id int ,
-        created_at DATETIMEOffset default GETDATE()
-    )`
+        created_at TIMESTAMP default now()
+    );`
 }
 
 function final_data(tableName) {
     
     return `create table ${tableName} (
-        id int IDENTITY(1,1) PRIMARY KEY,
+        id int PRIMARY KEY AUTO_INCREMENT,
         data_transaction_id int,
         user_id int,
         category_id int,
         app_id int,
         pattern_id int,
-        event_info varchar(max),
-        package_name varchar(max),
-        data_text varchar(max),
-        data_description varchar(max),
-        event_time DATETIMEOFFSET,
-        created_at DATETIMEOFFSET default GETDATE()
+        event_info varchar(1027),
+        package_name varchar(511),
+        data_text text,
+        data_description text,
+        event_time TIMESTAMP,
+        created_at TIMESTAMP default now()
     )`
 
 }
