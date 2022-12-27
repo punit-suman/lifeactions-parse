@@ -15,7 +15,7 @@ const { userRouter } = require("./routes/userRouter");
 const { rawDataRouter } = require("./routes/rawDataRouter");
 const { parseDataRouter } = require("./routes/parseDataRouter");
 
-const config = require('./dbConfig');
+// const config = require('./dbConfig');
 const { TablesName } = require('./constant');
 const { convertFileToPlanText } = require('./helpers/dataTranscation');
 
