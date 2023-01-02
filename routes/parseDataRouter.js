@@ -59,7 +59,7 @@ const parseData = async() => {
 
         var data_patterns
         let getDataPatternsPromise = new Promise(function(resolve, reject) {
-            var query = `select * from data_patterns_m`;
+            var query = `select * from event_info_m`;
             config.query(query, function(err, result) {
                 if (err) {
                     console.log(err.message)
@@ -73,12 +73,11 @@ const parseData = async() => {
         data_patterns = await getDataPatternsPromise
 
         var eventsInfoMaster
-        var query = `select acm.category_name, am.app_name, am.app_id, am.category_id, dpm.id, dpm.name as 'pattern_info', dpm.eventInfo, am.packageName
-                from data_patterns_m as dpm
-                left join apps_m as am on am.app_id = dpm.app_id
-                left join app_category_m acm on acm.id = am.category_id`;
         let getEventsInfoMasterPromise = new Promise(function(resolve, reject) {
-            var query = `select * from data_patterns_m`;
+            var query = `select acm.category_name, am.app_name, am.app_id, am.category_id, dpm.id, dpm.name as 'pattern_info', dpm.event_info, am.packageName
+                    from event_info_m as dpm
+                    left join apps_m as am on am.app_id = dpm.app_id
+                    left join app_category_m acm on acm.id = am.category_id`;
             config.query(query, function(err, result) {
                 if (err) {
                     console.log(err.message)
@@ -89,7 +88,7 @@ const parseData = async() => {
                 }
             })
         })
-        eventsInfoMaster = getEventsInfoMasterPromise
+        eventsInfoMaster = await getEventsInfoMasterPromise
 
         let values = []
         for (let i = 0; i < rawData.length; i++) {
@@ -125,12 +124,12 @@ const parseData = async() => {
                 nxtEventIndex = str.indexOf('NewEvent', nxtEventIndex+1)
                 
                 // check if this event is stored in the directory
-                let eventRegistered = data_patterns.find(a => a.eventInfo == info)
+                let eventRegistered = data_patterns.find(a => a.event_info == info)
 
                 var data = {}
                 if (eventRegistered) {
                     // if the event is stored in directory then get corresponding information
-                    let eventInfoFrmMstr = eventsInfoMaster.find(a => a.eventInfo == info)
+                    let eventInfoFrmMstr = eventsInfoMaster.find(a => a.event_info == info)
 
                     if (eventInfoFrmMstr) {
                         data = eventInfoFrmMstr
@@ -143,7 +142,7 @@ const parseData = async() => {
                             // app_name: appname ? appname : 'NA',
                             pattern_id: data.id,
                             // pattern_info: 'NA',
-                            eventInfo: data.eventInfo,
+                            eventInfo: data.event_info,
                             packageName: data.packageName ? data.packageName : info.split('*')[0].trim(),
                             data_text: (text != '[]' && text != '') ? text : '-',
                             data_description: desc != 'null' ? desc : '-',
@@ -226,7 +225,7 @@ const createFinalDataCsv = async() => {
             , fd.event_info, fd.package_name, data_text, data_description, event_time, fd.created_at
             FROM ${fnlDataTblName} as fd
             left join apps_m on apps_m.app_id = fd.app_id
-            left join data_patterns_m as dpm on dpm.id = fd.pattern_id
+            left join event_info_m as dpm on dpm.id = fd.pattern_id
             left join app_category_m as acm on acm.id = fd.category_id`
         // --where cast(event_time as date) = (select DATEADD(day, -1, CAST(GETDATE() AS date)))`;
         config.query(query, async function(err, result) {

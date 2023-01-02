@@ -4,6 +4,7 @@ const logger = require("morgan");
 const cron = require("node-cron");
 const {checkAndCreateTdyDataTbl, checkAndCreateNxtDayDataTbl } = require('./helpers/helpers');
 const { parseData, createFinalDataCsv, decryptStr, encrypt } = require('./routes/parseDataRouter')
+const { appLevelParse } = require('./routes/appLevelParseRouter')
 
 const app = express()
 const port = 8080
@@ -105,16 +106,32 @@ cron.schedule("* * * * *", async() => {
   console.log('cron job running...')
 });
 
+app.get('/cftpt', async(req, res) => {
+  await convertFileToPlanText();
+  res.send("Done")
+})
+
+app.get('/pd', async(req, res) => {
+  await parseData();
+  res.send("Done")
+})
+
+app.get('/cfdc', async(req, res) => {
+  await createFinalDataCsv();
+  res.send("Done")
+})
+
 app.get('/run', async(req, res) => {
   // await convertFileToPlanText();
   // await parseData()
+  // await createFinalDataCsv()
   // await checkAndCreateTables(TablesName.FILE)
   // await checkAndCreateTables(TablesName.DATA_TRANSACTION)
   // await checkAndCreateTables(TablesName.FINAL_DATA)
-  // await createFinalDataCsv()
   // await decryptStr()
   // await encrypt()
-  res.send("Done")
+  // let a = await appLevelParse()
+  // res.send(a)
 });
 
 app.listen(port, () => {
